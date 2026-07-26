@@ -35,11 +35,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       const scopusData = await scopusRes.json();
       scopusMasterList = buildMasterIssnList(scopusData);
       console.log(`Loaded ${scopusMasterList.length} Scopus ISSNs.`);
-    } else {
-      console.error("Failed to load Scopus database.");
     }
   } catch (e) {
-    console.error("Error fetching Scopus ISSNs:", e);
+    console.warn("Scopus ISSN fetch skipped or failed.");
   }
 
   try {
@@ -48,11 +46,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       const embaseData = await embaseRes.json();
       embaseMasterList = buildMasterIssnList(embaseData);
       console.log(`Loaded ${embaseMasterList.length} Embase ISSNs.`);
-    } else {
-      console.error("Failed to load Embase database.");
     }
   } catch (e) {
-    console.error("Error fetching Embase ISSNs:", e);
+    console.warn("Embase ISSN fetch skipped or failed.");
   }
 });
 
@@ -148,7 +144,7 @@ runBtn?.addEventListener('click', async () => {
         return;
       }
 
-      updateStatus('Auditing manuscript with Gemini 2.5 Flash...');
+      updateStatus('Auditing manuscript with Gemini 1.5 Flash...');
       const record = await processItem(cleanDoi, file, apiKey);
       addRecordToTable(record);
     } else {
@@ -231,7 +227,8 @@ async function processItem(doi, file, apiKey) {
     crossrefPubDate = `${y}-${m}-${d}`;
   }
 
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  // FIXED: Corrected Model Name to valid endpoint
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   const promptText = `
 You are an expert research integrity auditor performing a forensic manuscript extraction.
@@ -291,222 +288,3 @@ Extract and audit these parameters with strict fidelity:
       responseMimeType: "application/json",
       responseSchema: {
         type: "OBJECT",
-        properties: {
-          article_title: { type: "STRING" },
-          journal_name: { type: "STRING" },
-          authors: { type: "STRING" },
-          affiliation_department: { type: "STRING" },
-          affiliation_college: { type: "STRING" },
-          affiliation_university: { type: "STRING" },
-          affiliation_city: { type: "STRING" },
-          affiliation_country: { type: "STRING" },
-          orcid_ids: { type: "STRING" },
-          publisher: { type: "STRING" },
-          publisher_country: { type: "STRING" },
-          special_issue: { type: "STRING" },
-          study_design: { type: "STRING" },
-          reporting_guidelines: { type: "STRING" },
-          ethics_approval: { type: "STRING" },
-          trial_registration: { type: "STRING" },
-          protocol_registration: { type: "STRING" },
-          received_date: { type: "STRING" },
-          accepted_date: { type: "STRING" },
-          published_date: { type: "STRING" },
-          scientific_syntax: { type: "STRING" },
-          funding: { type: "STRING" },
-          journal_self_citation_percentage: { type: "STRING" },
-          tortured_phrases: { type: "STRING" },
-          hallucinated_references: { type: "STRING" },
-          pdf_extracted_issns: { type: "STRING" },
-          detected_pubmed: { type: "STRING" },
-          detected_pmc: { type: "STRING" }
-        },
-        required: [
-          "article_title", "journal_name", "authors", "affiliation_department",
-          "affiliation_college", "affiliation_university", "affiliation_city",
-          "affiliation_country", "orcid_ids", "publisher", "publisher_country",
-          "special_issue", "study_design", "reporting_guidelines", "ethics_approval",
-          "trial_registration", "protocol_registration", "received_date",
-          "accepted_date", "published_date", "scientific_syntax", "funding",
-          "journal_self_citation_percentage", "tortured_phrases", "hallucinated_references",
-          "pdf_extracted_issns", "detected_pubmed", "detected_pmc"
-        ]
-      }
-    }
-  };
-
-  const aiRes = await fetch(geminiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  if (!aiRes.ok) {
-    const errObj = await aiRes.json();
-    throw new Error(errObj.error?.message || 'Gemini API extraction failed.');
-  }
-  
-  const aiData = await aiRes.json();
-  const aiResult = JSON.parse(aiData.candidates[0].content.parts[0].text);
-
-  // --- MULTI-SOURCE ISSN MERGING (CRITICAL SCOPUS/EMBASE FIX) ---
-  let masterIssnPool = new Set();
-
-  // 1. Add CrossRef ISSNs
-  (crossrefData.ISSN || []).forEach(i => masterIssnPool.add(i));
-
-  // 2. Add OpenAlex ISSNs
-  if (openAlexData?.issn) {
-    (Array.isArray(openAlexData.issn) ? openAlexData.issn : [openAlexData.issn]).forEach(i => masterIssnPool.add(i));
-  }
-  if (openAlexData?.primary_location?.source?.issn) {
-    (Array.isArray(openAlexData.primary_location.source.issn) ? openAlexData.primary_location.source.issn : [openAlexData.primary_location.source.issn]).forEach(i => masterIssnPool.add(i));
-  }
-
-  // 3. Add AI-Extracted ISSNs from PDF
-  if (aiResult.pdf_extracted_issns) {
-    aiResult.pdf_extracted_issns.split(/;|,|\//).forEach(i => masterIssnPool.add(i.trim()));
-  }
-
-  // Clean and check against local master lists
-  const cleanedIssnArray = Array.from(masterIssnPool).map(i => i.replace(/[^0-9X]/gi, '').toUpperCase()).filter(i => i.length === 8);
-  
-  let isScopus = "No";
-  let isEmbase = "No";
-  if (cleanedIssnArray.length > 0) {
-    if (cleanedIssnArray.some(i => scopusMasterList.includes(i))) isScopus = "Yes";
-    if (cleanedIssnArray.some(i => embaseMasterList.includes(i))) isEmbase = "Yes";
-  }
-
-  const formattedIssnDisplay = Array.from(masterIssnPool).filter(Boolean).join(' / ') || 'Not reported';
-
-  aiResult.received_to_accepted_days = calculateDaysRobust(aiResult.received_date, aiResult.accepted_date);
-  aiResult.accepted_to_published_days = calculateDaysRobust(aiResult.accepted_date, aiResult.published_date);
-
-  const finalRecord = {
-    doi: doi || crossrefData.DOI || 'Extracted from PDF',
-    article_title: aiResult.article_title || 'Not reported',
-    journal_name: aiResult.journal_name || 'Not reported',
-    issn: formattedIssnDisplay,
-    authors: aiResult.authors || 'Not reported',
-    affiliation_department: aiResult.affiliation_department || 'Not reported',
-    affiliation_college: aiResult.affiliation_college || 'Not reported',
-    affiliation_university: aiResult.affiliation_university || 'Not reported',
-    affiliation_city: aiResult.affiliation_city || 'Not reported',
-    affiliation_country: aiResult.affiliation_country || 'Not reported',
-    orcid_ids: aiResult.orcid_ids || 'Not reported',
-    publisher: aiResult.publisher || crossrefData.publisher || 'Not reported',
-    publisher_country: aiResult.publisher_country || 'Not reported',
-    special_issue: aiResult.special_issue || 'No',
-    study_design: aiResult.study_design || 'Not reported',
-    reporting_guidelines: aiResult.reporting_guidelines || 'Not reported',
-    ethics_approval: aiResult.ethics_approval || 'Not reported',
-    trial_registration: aiResult.trial_registration || 'Not applicable',
-    protocol_registration: aiResult.protocol_registration || 'Not reported',
-    received_to_accepted_days: aiResult.received_to_accepted_days,
-    accepted_to_published_days: aiResult.accepted_to_published_days,
-    scientific_syntax: aiResult.scientific_syntax || 'Not evaluated',
-    funding: aiResult.funding || 'No',
-    journal_self_citation_percentage: aiResult.journal_self_citation_percentage || '0%',
-    tortured_phrases: aiResult.tortured_phrases || 'None',
-    hallucinated_references: aiResult.hallucinated_references || 'None',
-    pubmed: aiResult.detected_pubmed || 'No', 
-    pmc: aiResult.detected_pmc || 'No',       
-    medline: medlineStatus ? 'Yes' : 'No', 
-    scopus: isScopus,
-    embase: isEmbase,
-    doaj: doajStatus ? 'Yes' : 'No'
-  };
-
-  return finalRecord;
-}
-
-async function checkStrictMedline(doi) {
-  if (!doi) return false;
-  try {
-    const res = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(doi)}[doi]+AND+medline[sb]&retmode=json`);
-    const data = await res.json();
-    return parseInt(data.esearchresult?.count || '0') > 0;
-  } catch { return false; }
-}
-
-async function checkDOAJIndexing(issns) {
-  if (!issns || issns.length === 0) return false;
-  try {
-    const res = await fetch(`https://doaj.org/api/v2/search/journals/issn%3A${issns[0]}`);
-    const data = await res.json();
-    return data.total > 0;
-  } catch { return false; }
-}
-
-async function fetchOpenAlexData(doi) {
-  if (!doi) return null;
-  try {
-    const res = await fetch(`https://api.openalex.org/works/https://doi.org/${doi}`, {
-      headers: { 'User-Agent': 'mailto:pqrs.audit.tool@example.com' }
-    });
-    return res.ok ? await res.json() : null;
-  } catch { return null; }
-}
-
-async function fetchWebsiteText(doi) {
-  if (!doi) return "Not available";
-  try {
-    const targetUrl = `https://doi.org/${doi}`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-    const res = await fetch(proxyUrl);
-    const html = await res.text();
-    return html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 15000);
-  } catch { return "Not available"; }
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = error => reject(error);
-  });
-}
-
-function parseCsvDois(csvText) {
-  const lines = csvText.split('\n');
-  const dois = [];
-  lines.forEach(line => {
-    const match = line.match(/(10\.\d{4,9}\/[-._;()/:a-zA-Z0-9]+)/);
-    if (match) dois.push(match[0].replace(/\/+$/, ''));
-  });
-  return [...new Set(dois)];
-}
-
-function addRecordToTable(record) {
-  extractedRecords.push(record);
-  if (extractedRecords.length === 1 && resultsBody) resultsBody.innerHTML = '';
-  
-  const tr = document.createElement('tr');
-  tr.innerHTML = Object.values(record).map(val => `<td>${val}</td>`).join('');
-  resultsBody?.appendChild(tr);
-  if (exportCsvBtn) exportCsvBtn.disabled = false;
-}
-
-exportCsvBtn?.addEventListener('click', () => {
-  if (extractedRecords.length === 0) return;
-  const headers = Object.keys(extractedRecords[0]).join(',');
-  const rows = extractedRecords.map(rec => Object.values(rec).map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
-  const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
-  const link = document.createElement("a");
-  link.setAttribute("href", encodeURI(csvContent));
-  link.setAttribute("download", "PQRS_Stomatology_Quality_Audit.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-});
-
-function setLoading(isLoading) {
-  if (runBtn) runBtn.disabled = isLoading;
-  if (btnText) btnText.textContent = isLoading ? 'Processing...' : 'Run Extraction';
-  btnSpinner?.classList.toggle('hidden', !isLoading);
-  statusMessage?.classList.toggle('hidden', !isLoading);
-}
-
-function updateStatus(msg) { if (statusMessage) statusMessage.textContent = msg; }
