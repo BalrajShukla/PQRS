@@ -8,8 +8,6 @@ import { parseBatchCsv, buildBatchJobs, readFileArrayBuffer, getConcurrencyLimit
 import { checkIndexing } from './indexing.js';
 import { downloadCsv, downloadXlsx } from './export.js';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js';
-
 const el = (id) => document.getElementById(id);
 const state = {
   rows: [],
@@ -72,9 +70,36 @@ function renderTable(rows) {
   el('downloadXlsx').disabled = false;
 }
 
+async function ensurePdfJs() {
+  if (globalThis.pdfjsLib?.getDocument) {
+    try {
+      globalThis.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js';
+    } catch {}
+    return globalThis.pdfjsLib;
+  }
+
+  await new Promise((resolve, reject) => {
+    const existing = [...document.scripts].find((s) => String(s.src || '').includes('pdf.min.js'));
+    if (existing && globalThis.pdfjsLib?.getDocument) {
+      return resolve();
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('PDF.js failed to load'));
+    document.head.appendChild(script);
+  });
+
+  if (!globalThis.pdfjsLib?.getDocument) {
+    throw new Error('PDF.js did not initialize correctly');
+  }
+  globalThis.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js';
+  return globalThis.pdfjsLib;
+}
+
 async function runWorkerExtraction(arrayBuffer) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker('./js/worker.js');
+    const worker = new Worker(new URL('./worker.js', import.meta.url));
     const id = crypto.randomUUID();
     worker.onmessage = (event) => {
       if (event.data.id !== id) return;
@@ -98,10 +123,20 @@ async function processSingleJob(job, idx, total) {
 
   log(`(${idx + 1}/${total}) Loading ${job.file.name}`);
   const buffer = await readFileArrayBuffer(job.file);
-  const extracted = await runWorkerExtraction(buffer.slice(0));
+  await ensurePdfJs();
+
+  let extracted;
+  try {
+    extracted = await runWorkerExtraction(buffer.slice(0));
+  } catch (workerErr) {
+    log(`(${idx + 1}/${total}) Worker fallback for ${job.file.name}: ${workerErr?.message || workerErr}`);
+    extracted = await extractPdfText(buffer, { maxPages: 12 });
+  }
+
   let text = extracted.text || '';
   if (extracted.needsOCR || text.length < 1000) {
     log(`(${idx + 1}/${total}) OCR fallback for ${job.file.name}`);
+    await ensurePdfJs();
     text = await ocrPdf(buffer, { pages: [1, 2] });
   }
 
@@ -220,7 +255,15 @@ function wireEvents() {
   el('downloadXlsx').addEventListener('click', () => downloadXlsx(state.rows));
 }
 
-loadSettings();
-updateModeUi();
-wireEvents();
-log('PQRS loaded. Ready for PDF and DOI extraction.');
+try {
+  loadSettings();
+  updateModeUi();
+  wireEvents();
+  log('PQRS loaded. Ready for PDF and DOI extraction.');
+} catch (err) {
+  console.error(err);
+  const area = el('log');
+  if (area) area.textContent = `Initialization error: ${err?.message || err}`;
+  const badge = el('statusBadge');
+  if (badge) badge.textContent = 'Initialization error';
+}
