@@ -15,7 +15,6 @@
       --muted: #666;
       --border: #e7d8c7;
       --accent: #f28c28;
-      --accent-2: #ffb15d;
       --button-text: #ffffff;
       --shadow: 0 10px 30px rgba(0,0,0,.08);
       --input-bg: #ffffff;
@@ -32,7 +31,6 @@
       --muted: #a0b6b6;
       --border: #204040;
       --accent: #17b7b1;
-      --accent-2: #44d6d0;
       --button-text: #031010;
       --shadow: 0 12px 30px rgba(0,0,0,.28);
       --input-bg: #091313;
@@ -51,29 +49,25 @@
     }
 
     .wrap {
-      max-width: 1500px;
+      max-width: 1600px;
       margin: 0 auto;
       padding: 18px;
+    }
+
+    .topbar, .panel, .results, .log {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      border-radius: 20px;
     }
 
     .topbar {
       display: flex;
       justify-content: space-between;
-      align-items: center;
       gap: 12px;
+      align-items: center;
       padding: 16px 18px;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
       margin-bottom: 14px;
-    }
-
-    .title {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 0;
     }
 
     .title h1 {
@@ -83,15 +77,15 @@
     }
 
     .title p {
-      margin: 0;
+      margin: 4px 0 0;
       color: var(--muted);
       font-size: 0.95rem;
     }
 
     .toolbar {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
+      gap: 10px;
       align-items: center;
     }
 
@@ -105,21 +99,28 @@
       font-weight: 700;
       cursor: pointer;
       box-shadow: var(--shadow);
-      transition: transform .08s ease, opacity .15s ease;
     }
 
-    .btn:hover { opacity: .95; }
-    .btn:active { transform: translateY(1px); }
     .btn.secondary {
       background: transparent;
       color: var(--text);
       border: 1px solid var(--border);
       box-shadow: none;
     }
+
     .btn:disabled {
-      cursor: not-allowed;
       opacity: .55;
-      transform: none;
+      cursor: not-allowed;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 700;
+      font-size: .92rem;
     }
 
     .grid {
@@ -130,10 +131,6 @@
     }
 
     .panel {
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
       padding: 16px;
       min-width: 0;
     }
@@ -142,6 +139,8 @@
       margin: 0 0 12px;
       font-size: 1.05rem;
     }
+
+    .stack { display: grid; gap: 10px; }
 
     .row {
       display: grid;
@@ -153,15 +152,14 @@
 
     .row label {
       font-weight: 650;
-      color: var(--text);
     }
 
     .row .hint {
       grid-column: 2 / -1;
       color: var(--muted);
       font-size: .9rem;
-      margin-top: -4px;
       line-height: 1.45;
+      margin-top: -4px;
     }
 
     input[type="text"], input[type="password"], input[type="url"], select {
@@ -180,19 +178,6 @@
       color: var(--muted);
     }
 
-    .stack {
-      display: grid;
-      gap: 10px;
-    }
-
-    .small {
-      color: var(--muted);
-      font-size: .92rem;
-      line-height: 1.45;
-    }
-
-    .hidden { display: none !important; }
-
     .controls {
       display: flex;
       flex-wrap: wrap;
@@ -209,79 +194,63 @@
       margin-bottom: 14px;
     }
 
-    .badge {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-weight: 700;
-      font-size: .92rem;
+    .results {
+      overflow: hidden;
+      margin-bottom: 14px;
     }
 
-    .<style>
-  /* replace only the table-related part */
-  .results {
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    background: var(--panel);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-  }
+    .results-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-2);
+    }
 
-  .results-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: center;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel-2);
-  }
+    .results-head h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
 
-  .table-wrap {
-    overflow: auto;
-    max-width: 100%;
-  }
+    .table-wrap {
+      overflow: auto;
+      max-width: 100%;
+    }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: auto;
-    min-width: 1700px;
-  }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      min-width: 1800px;
+    }
 
-  th, td {
-    border-bottom: 1px solid var(--border);
-    padding: 8px 10px;
-    vertical-align: top;
-    font-size: .85rem;
-    line-height: 1.35;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      vertical-align: top;
+      font-size: .85rem;
+      line-height: 1.35;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
 
-  th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    text-align: left;
-    background: var(--table-head);
-    font-weight: 800;
-    white-space: nowrap;
-  }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      text-align: left;
+      background: var(--table-head);
+      font-weight: 800;
+      white-space: nowrap;
+    }
 
-  tbody tr:nth-child(even) td {
-    background: var(--table-stripe);
-  }
-    
-</style>
+    tbody tr:nth-child(even) td {
+      background: var(--table-stripe);
+    }
+
     .log {
-      margin-top: 14px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
       padding: 14px 16px;
     }
 
@@ -303,23 +272,14 @@
       line-height: 1.45;
     }
 
+    .hidden { display: none !important; }
+
     @media (max-width: 980px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-      .row {
-        grid-template-columns: 1fr;
-      }
-      .row .hint {
-        grid-column: auto;
-      }
-      table {
-        min-width: 900px;
-      }
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
-      }
+      .grid { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
+      .row .hint { grid-column: auto; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      table { min-width: 1100px; }
     }
   </style>
 </head>
@@ -444,7 +404,7 @@
     <section class="log">
       <pre id="log"></pre>
       <div class="footnote">
-        If the page still appears unresponsive after replacing this file, the next thing to verify is whether every JavaScript file is present at the exact same path expected by the imports inside <code>js/app.js</code>.
+        If the page still appears unresponsive after replacing this file, check whether <code>js/app.js</code> is present at the exact same path in your GitHub Pages repository root.
       </div>
     </section>
   </div>
