@@ -114,7 +114,6 @@ function loadScript(src, globalKey) {
       resolve(globalThis[globalKey]);
       return;
     }
-
     const script = document.createElement('script');
     script.src = src;
     script.crossOrigin = 'anonymous';
@@ -261,7 +260,6 @@ async function fetchCrossrefByDoi(doi) {
     return `${i + 1}. ${name || 'Not reported'}`;
   });
 
-  const affiliations = (m.author || []).map((a) => a.affiliation?.[0]?.name || '');
   const issns = Array.isArray(m.ISSN) ? m.ISSN.filter(Boolean) : [];
   const journal = m['container-title']?.[0] || m.shortContainerTitle?.[0] || '';
   const title = m.title?.[0] || '';
@@ -271,15 +269,15 @@ async function fetchCrossrefByDoi(doi) {
     journal_name: journal,
     article_title: title,
     authors: authors.join('; '),
-    affiliation_department: semicolonListFromArray(affiliations.map(() => 'Not reported')),
-    affiliation_college: semicolonListFromArray(affiliations.map(() => 'Not reported')),
-    affiliation_university: semicolonListFromArray(affiliations.map(() => 'Not reported')),
-    affiliation_city: semicolonListFromArray(affiliations.map(() => 'Not reported')),
-    affiliation_country: semicolonListFromArray(affiliations.map(() => 'Not reported')),
+    affiliation_department: semicolonListFromArray((m.author || []).map(() => 'Not reported')),
+    affiliation_college: semicolonListFromArray((m.author || []).map(() => 'Not reported')),
+    affiliation_university: semicolonListFromArray((m.author || []).map(() => 'Not reported')),
+    affiliation_city: semicolonListFromArray((m.author || []).map(() => 'Not reported')),
+    affiliation_country: semicolonListFromArray((m.author || []).map(() => 'Not reported')),
     publisher: safeString(m.publisher),
     publisher_country: 'Not reported',
-    issn_e: issns.find((x) => String(x).includes('-')) || issns[0] || '',
-    issn_p: issns.find((x) => String(x).includes('-') && x !== issns[0]) || '',
+    issn_e: issns[0] || '',
+    issn_p: issns[1] || '',
     published: m.published?.['date-parts']?.[0]?.[0] || m.created?.['date-parts']?.[0]?.[0] || '',
     url: m.URL || '',
   };
@@ -562,14 +560,6 @@ function formatPercentage(v) {
   if (!s) return 'Not reported';
   if (/%$/.test(s)) return s;
   return `${s}%`;
-}
-
-function normalizeValue(value, fallback = 'Not reported') {
-  if (value == null) return fallback;
-  if (typeof value === 'string') return safeString(value, fallback);
-  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-  if (Array.isArray(value)) return semicolonListFromArray(value) || fallback;
-  return safeString(JSON.stringify(value), fallback);
 }
 
 function normalizeGeminiResult(obj) {
