@@ -6,8 +6,8 @@ const CONFIG = {
   },
   defaultModel: 'gemini-2.5-pro',
   maxBatchFiles: 25,
-  pdfJsUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js',
-  pdfWorkerUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js',
+  pdfJsUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.min.js',
+  pdfWorkerUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.worker.min.js',
   tesseractUrl: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
   xlsxUrl: 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js',
 };
@@ -114,15 +114,7 @@ function loadScript(src, globalKey) {
       resolve(globalThis[globalKey]);
       return;
     }
-    const existing = [...document.scripts].find((s) => s.src === src);
-    if (existing) {
-      const wait = () => {
-        if (!globalKey || globalThis[globalKey]) resolve(globalKey ? globalThis[globalKey] : true);
-        else setTimeout(wait, 50);
-      };
-      wait();
-      return;
-    }
+
     const script = document.createElement('script');
     script.src = src;
     script.crossOrigin = 'anonymous';
