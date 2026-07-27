@@ -1,108 +1,440 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
   <title>PQRS: Probing the Quality of Research in Stomatology</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fff8ef;
+      --panel: #ffffff;
+      --panel-2: #fff1df;
+      --text: #1f1f1f;
+      --muted: #666;
+      --border: #e7d8c7;
+      --accent: #f28c28;
+      --accent-2: #ffb15d;
+      --button-text: #ffffff;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --input-bg: #ffffff;
+      --input-text: #1f1f1f;
+      --table-head: #ffe1bf;
+      --table-stripe: #fff9f2;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #081111;
+      --panel: #0e1818;
+      --panel-2: #102020;
+      --text: #edf7f7;
+      --muted: #a0b6b6;
+      --border: #204040;
+      --accent: #17b7b1;
+      --accent-2: #44d6d0;
+      --button-text: #031010;
+      --shadow: 0 12px 30px rgba(0,0,0,.28);
+      --input-bg: #091313;
+      --input-text: #edf7f7;
+      --table-head: #0f2424;
+      --table-stripe: #0b1616;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, var(--bg), var(--panel));
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 2vw, 1.9rem);
+      line-height: 1.15;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: 0;
+      background: var(--accent);
+      color: var(--button-text);
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform .08s ease, opacity .15s ease;
+    }
+
+    .btn:hover { opacity: .95; }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+      transform: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .row label {
+      font-weight: 650;
+      color: var(--text);
+    }
+
+    .row .hint {
+      grid-column: 2 / -1;
+      color: var(--muted);
+      font-size: .9rem;
+      margin-top: -4px;
+    }
+
+    input[type="text"], input[type="password"], input[type="url"], select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--input-text);
+      font-size: 0.98rem;
+      outline: none;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      color: var(--muted);
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+
+    .hidden { display: none !important; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .statusline {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 700;
+      font-size: .92rem;
+    }
+
+    .results {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .results-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-2);
+    }
+
+    .results-head h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      min-width: 1100px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 10px;
+      vertical-align: top;
+      font-size: .92rem;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      text-align: left;
+      background: var(--table-head);
+      font-weight: 800;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: var(--table-stripe);
+    }
+
+    .log {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .log pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 240px;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .88rem;
+      color: var(--text);
+    }
+
+    .footnote {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    .file-help {
+      font-size: .9rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    @media (max-width: 980px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .row {
+        grid-template-columns: 1fr;
+      }
+      .row .hint {
+        grid-column: auto;
+      }
+      table {
+        min-width: 900px;
+      }
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
         <h1>PQRS: Probing the Quality of Research in Stomatology</h1>
-        <p class="subtitle">Client-side metadata, bibliometric, editorial, indexing, and integrity analysis for manuscripts.</p>
+        <p>Client-side manuscript metadata, bibliometrics, editorial checks, and export tools.</p>
       </div>
-      <button id="themeToggle" class="btn ghost" type="button" title="Toggle theme">🌗 Theme</button>
-    </header>
+      <div class="toolbar">
+        <button id="themeToggle" class="btn secondary" type="button">Toggle Theme</button>
+        <span id="statusBadge" class="badge">Ready</span>
+      </div>
+    </div>
 
-    <section class="card settings-card">
-      <div class="card-head">
-        <h2>Local settings</h2>
-        <span class="pill">Stored in this browser only</span>
-      </div>
-      <div class="grid settings-grid">
-        <label>
-          <span>Gemini API key</span>
-          <input id="apiKey" type="password" placeholder="Paste your Gemini API key" autocomplete="off" />
-        </label>
-        <label>
-          <span>Gemini model</span>
-          <select id="modelSelect">
-            <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-            <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-          </select>
-        </label>
-        <label>
-          <span>Processing mode</span>
-          <select id="modeSelect">
-            <option value="single">Single manuscript</option>
-            <option value="batch">Batch (CSV + files)</option>
-          </select>
-        </label>
-        <div class="actions inline-actions">
-          <button id="saveSettings" class="btn primary" type="button">Save settings</button>
-          <button id="clearSettings" class="btn ghost" type="button">Clear local settings</button>
+    <div class="grid">
+      <section class="panel">
+        <h2>Settings</h2>
+        <div class="stack">
+          <div class="row">
+            <label for="apiKey">Gemini API key</label>
+            <input id="apiKey" type="password" placeholder="Paste your Gemini API key here" autocomplete="off" />
+            <div class="hint">
+              <strong>How to get a Gemini key:</strong>
+              Open <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio API keys</a>, sign in, create a key, copy it here, and save.
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="modelSelect">Gemini model</label>
+            <select id="modelSelect">
+              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+              <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+            </select>
+            <div class="hint">Choose the model for PDF-based extraction and reasoning.</div>
+          </div>
+
+          <div class="controls">
+            <button id="saveSettings" class="btn" type="button">Save Settings</button>
+            <button id="clearSettings" class="btn secondary" type="button">Reset</button>
+          </div>
         </div>
-      </div>
-      <div class="helpbox">
-        <strong>How to get a Gemini key:</strong>
-        Open <em>Google AI Studio</em>, sign in, create an API key, copy it here, and save. The key stays in your browser storage and is never uploaded to your GitHub Pages site.
-      </div>
-    </section>
+      </section>
 
-    <section class="card">
-      <div class="card-head">
+      <section class="panel">
         <h2>Input</h2>
-        <span class="pill">25 PDFs maximum per batch</span>
-      </div>
-      <div class="grid input-grid">
-        <label>
-          <span>DOI</span>
-          <input id="doiInput" type="text" placeholder="10.xxxx/xxxxx" />
-        </label>
-        <label>
-          <span>Manuscript PDF(s)</span>
-          <input id="pdfInput" type="file" accept="application/pdf" multiple />
-        </label>
-        <label id="csvWrap" class="hidden">
-          <span>Batch CSV (optional mapping file)</span>
-          <input id="csvInput" type="file" accept=".csv,text/csv" />
-        </label>
-        <label id="urlWrap" class="hidden">
-          <span>Article URL fallback (optional)</span>
-          <input id="urlInput" type="url" placeholder="https://journal-site.example/article" />
-        </label>
-      </div>
-      <div class="actions">
-        <button id="runBtn" class="btn primary" type="button">Run extraction</button>
-        <button id="downloadCsv" class="btn" type="button" disabled>Download CSV</button>
-        <button id="downloadXlsx" class="btn" type="button" disabled>Download Excel</button>
-      </div>
-      <div class="note">
-        For batch mode, upload a CSV with columns like <code>doi</code>, <code>file</code> (or <code>filename</code>) and optionally <code>url</code>.
-      </div>
-    </section>
+        <div class="stack">
+          <div class="row">
+            <label for="modeSelect">Mode</label>
+            <select id="modeSelect">
+              <option value="single">Single manuscript</option>
+              <option value="batch">Batch processing</option>
+            </select>
+            <div class="hint">Batch mode accepts up to 25 PDFs at a time.</div>
+          </div>
 
-    <section class="card">
-      <div class="card-head">
-        <h2>Status</h2>
-        <span id="statusBadge" class="pill">Idle</span>
-      </div>
-      <pre id="log" class="log" aria-live="polite"></pre>
-    </section>
+          <div class="row">
+            <label for="doiInput">DOI</label>
+            <input id="doiInput" type="text" placeholder="10.xxxx/xxxxx" />
+            <div class="hint">Enter one DOI or leave blank and rely on the manuscript PDF.</div>
+          </div>
 
-    <section class="card results-card">
-      <div class="card-head">
-        <h2>Results</h2>
-        <span id="resultsCount" class="pill">0 rows</span>
+          <div class="row">
+            <label for="urlInput">Manuscript URL</label>
+            <input id="urlInput" type="url" placeholder="Journal landing page URL (optional)" />
+            <div class="hint">Used when DOI lookup is incomplete or fails.</div>
+          </div>
+
+          <div class="row" id="pdfWrap">
+            <label for="pdfInput">PDF file(s)</label>
+            <input id="pdfInput" type="file" accept="application/pdf" multiple />
+            <div class="hint">Upload the manuscript PDF. In batch mode, upload up to 25 PDFs.</div>
+          </div>
+
+          <div class="row" id="csvWrap" class="hidden">
+            <label for="csvInput">Batch CSV</label>
+            <input id="csvInput" type="file" accept=".csv,text/csv" />
+            <div class="hint">Optional CSV containing DOI / URL / file references, depending on your workflow.</div>
+          </div>
+
+          <div class="controls">
+            <button id="runBtn" class="btn" type="button">Run Extraction</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Output</h2>
+        <div class="stack">
+          <div class="small">
+            Results appear in the table below. Use the download buttons after processing is complete.
+          </div>
+          <div class="controls">
+            <button id="downloadCsv" class="btn secondary" type="button" disabled>Download CSV</button>
+            <button id="downloadXlsx" class="btn secondary" type="button" disabled>Download Excel</button>
+          </div>
+          <div class="small">Files are processed in the browser only.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="statusline">
+      <span class="badge" id="resultsCount">0 rows</span>
+      <span class="badge">Client-side</span>
+      <span class="badge">GitHub Pages ready</span>
+    </div>
+
+    <section class="results">
+      <div class="results-head">
+        <h2>Results Table</h2>
+        <div class="small">Horizontal, scrollable table with compact columns</div>
       </div>
       <div class="table-wrap">
         <table id="resultsTable">
@@ -111,9 +443,15 @@
         </table>
       </div>
     </section>
+
+    <section class="log">
+      <pre id="log"></pre>
+      <div class="footnote">
+        If the page still appears unresponsive after replacing this file, the next thing to verify is whether every JavaScript file is present at the exact same path expected by the imports inside <code>js/app.js</code>.
+      </div>
+    </section>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js"></script>
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
