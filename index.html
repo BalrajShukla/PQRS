@@ -219,63 +219,63 @@
       font-size: .92rem;
     }
 
-    .results {
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+    .<style>
+  /* replace only the table-related part */
+  .results {
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
 
-    .results-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--panel-2);
-    }
+  .results-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+  }
 
-    .results-head h2 {
-      margin: 0;
-      font-size: 1.05rem;
-    }
+  .table-wrap {
+    overflow: auto;
+    max-width: 100%;
+  }
 
-    .table-wrap {
-      overflow: auto;
-      max-width: 100%;
-    }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    min-width: 1700px;
+  }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-      min-width: 1100px;
-    }
+  th, td {
+    border-bottom: 1px solid var(--border);
+    padding: 8px 10px;
+    vertical-align: top;
+    font-size: .85rem;
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
 
-    th, td {
-      border-bottom: 1px solid var(--border);
-      padding: 10px 10px;
-      vertical-align: top;
-      font-size: .92rem;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+    background: var(--table-head);
+    font-weight: 800;
+    white-space: nowrap;
+  }
 
-    th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      text-align: left;
-      background: var(--table-head);
-      font-weight: 800;
-    }
-
-    tbody tr:nth-child(even) td {
-      background: var(--table-stripe);
-    }
-
+  tbody tr:nth-child(even) td {
+    background: var(--table-stripe);
+  }
+    
+</style>
     .log {
       margin-top: 14px;
       border: 1px solid var(--border);
